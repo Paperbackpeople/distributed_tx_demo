@@ -1,0 +1,57 @@
+version: '3.8'
+services:
+  order-svc:
+    build:
+      context: .
+      dockerfile: Dockerfile
+      args:
+        SERVICE: order-svc
+    ports: [ "6001:6001" ]
+    depends_on: [ mysql ]
+    environment:
+      - DB_DSN=root:Wangzhaoyu011207.@tcp(mysql:3306)/order_db
+
+  stock-svc:
+    build:
+      context: .
+      dockerfile: Dockerfile
+      args:
+        SERVICE: stock-svc
+    ports: [ "6002:6002" ]
+    depends_on: [ mysql ]
+    environment:
+      - DB_DSN=root:Wangzhaoyu011207.@tcp(mysql:3306)/stock_db
+
+  pay-svc:
+    build:
+      context: .
+      dockerfile: Dockerfile
+      args:
+        SERVICE: pay-svc
+    ports: [ "6003:6003" ]
+    depends_on: [ mysql ]
+    environment:
+      - DB_DSN=root:Wangzhaoyu011207.@tcp(mysql:3306)/pay_db
+
+  tx-coordinator:
+    build:
+      context: .
+      dockerfile: Dockerfile
+      args:
+        SERVICE: tx-coordinator
+    ports: [ "7000:7000" ]
+    depends_on:
+      - order-svc
+      - stock-svc
+      - pay-svc
+
+  mysql:
+    image: mysql:8.0
+    restart: always
+    environment:
+      MYSQL_ROOT_PASSWORD: Wangzhaoyu011207.
+      MYSQL_DATABASE: order_db
+    ports:
+      - "3306:3306"
+    volumes:
+      - ./scripts/mysql-init:/docker-entrypoint-initdb.d

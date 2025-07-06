@@ -1,0 +1,40 @@
+syntax = 'proto3';
+package tx.v1;
+option go_package = "distributed_tx_demo/api/tx/v1;txv1";
+/********* 订单 *********/
+message OrderItem  { int64 product_id = 1; int32 qty = 2; int32 price = 3; }
+message OrderTry   { string gid = 1; int64 user_id = 2; repeated OrderItem items = 3; int32 total_amt = 4; }
+message Ack        { bool ok = 1; string msg = 2; }
+
+service OrderSvc {
+  rpc Try    (OrderTry) returns (Ack);   // = Prepare
+  rpc Confirm(Gid)      returns (Ack);   // = Commit
+  rpc Cancel (Gid)      returns (Ack);   // = Rollback
+}
+
+/********* 库存 *********/
+message StockTry {
+  string gid        = 1;
+  int64  product_id = 2;
+  int32  qty        = 3;
+}
+service StockSvc {
+  rpc Try    (StockTry) returns (Ack);
+  rpc Confirm(Gid)      returns (Ack);
+  rpc Cancel (Gid)      returns (Ack);
+}
+
+/********* 支付 *********/
+message PayTry {
+  string gid      = 1;
+  int64  user_id  = 2;
+  int32  amount   = 3;
+}
+service PaySvc {
+  rpc Try    (PayTry)   returns (Ack);
+  rpc Confirm(Gid)      returns (Ack);
+  rpc Cancel (Gid)      returns (Ack);
+}
+
+/********* 通用 *********/
+message Gid { string gid = 1; }
