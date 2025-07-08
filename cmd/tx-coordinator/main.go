@@ -5,10 +5,9 @@ import (
 	"fmt"
 	"net/http"
 	"time"
-
+	"log"
 	txv1 "distributed_tx_demo/api/tx/v1"
 	"distributed_tx_demo/infra"
-
 	"google.golang.org/grpc"
 )
 
@@ -80,8 +79,9 @@ func main() {
 
 		// phase 1: Try
 		allOk := true
-		for _, p := range ps {
+		for i, p := range ps {
 			ack, err := p.try(ctx)
+			log.Printf("TRY-%d result: ack=%+v err=%v", i, ack, err)
 			if err != nil || !ack.Ok {
 				allOk = false
 				break

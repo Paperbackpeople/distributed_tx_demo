@@ -6,6 +6,9 @@ import (
 	"database/sql"
 	txv1 "distributed_tx_demo/api/tx/v1"
 	"distributed_tx_demo/infra"
+	"fmt"
+	"log"
+	"time"
 )
 
 type Stock struct {
@@ -13,6 +16,17 @@ type Stock struct {
 }
 
 func (s *Stock) Try(ctx context.Context, in *txv1.StockTry) (*txv1.Ack, error) {
+	log.Printf("[Stock.Try] in: %+v", in)
+	lockKey := fmt.Sprintf("lock:stock:%d", in.ProductId)
+	token, ok, err := infra.Acquire(ctx, lockKey, 3*time.Second)
+	if err != nil {
+		return infra.KO(err), nil
+	}
+	if !ok {
+		return &txv1.Ack{Ok: false, Msg: "busy, try again"}, nil
+	}
+	defer infra.Release(context.Background(), lockKey, token)
+
 	db := infra.DB()
 	tx, err := db.BeginTx(ctx, nil)
 	if err != nil {
@@ -61,6 +75,7 @@ func (s *Stock) Try(ctx context.Context, in *txv1.StockTry) (*txv1.Ack, error) {
 	return infra.OK(), tx.Commit()
 }
 func (s *Stock) Confirm(ctx context.Context, gid *txv1.Gid) (*txv1.Ack, error) {
+	log.Printf("[Stock.Confirm] gid: %s", gid.Gid)
 	db := infra.DB()
 	tx, err := db.BeginTx(ctx, nil)
 	if err != nil {
@@ -98,6 +113,7 @@ func (s *Stock) Confirm(ctx context.Context, gid *txv1.Gid) (*txv1.Ack, error) {
 }
 
 func (s *Stock) Cancel(ctx context.Context, gid *txv1.Gid) (*txv1.Ack, error) {
+	log.Printf("[Stock.Cancel] gid: %s", gid.Gid)
 	db := infra.DB()
 	tx, err := db.BeginTx(ctx, nil)
 	if err != nil {
